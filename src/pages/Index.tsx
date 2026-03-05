@@ -80,7 +80,7 @@ const Index = () => {
         return;
       }
 
-      const { amount, currency, webhook, metadata } = payload;
+      const { amount, currency, webhook, metadata, redirect } = payload;
 
       if (!amount || !currency || !webhook) return;
 
@@ -95,6 +95,7 @@ const Index = () => {
         status: "pending",
         txHash: "",
         metadata: JSON.parse(metadata),
+        redirectUrl: redirect,
       };
 
       // const txRes = await TxAPI.create(data);
@@ -163,6 +164,7 @@ const Index = () => {
     }
 
     setTx(res.data);
+    window.location.href = res.data.redirectUrl;
   };
 
   const token = tokens.find((t) => t.id === selectedToken);

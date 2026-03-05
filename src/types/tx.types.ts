@@ -16,5 +16,6 @@ export interface ITx {
   txHash: string;
   status: TTxStatus;
   webhookUrl: string;
+  redirectUrl: string;
   metadata: any;
 }
