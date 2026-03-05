@@ -72,20 +72,12 @@ const Index = () => {
           payload = JSON.parse(decrypted);
         } catch (err) {
           console.error("Invalid encrypted payload");
-          return toast({
-            variant: "destructive",
-            title: "Encryption failed",
-            description: "Please return to your app",
-          });
+          return;
         }
       }
 
       if (!payload) {
-        return toast({
-          variant: "destructive",
-          title: "Encryption failed",
-          description: "Please return to your app",
-        });
+        return;
       }
 
       const { amount, currency, webhook, metadata } = payload;
