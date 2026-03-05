@@ -6,20 +6,32 @@ interface AmountInputProps {
   value: string;
   onChange: (val: string) => void;
   symbol?: string;
+  disabled?: boolean;
 }
 
-const AmountInput = ({ value, onChange, symbol }: AmountInputProps) => {
+const AmountInput = ({
+  value,
+  onChange,
+  symbol,
+  disabled,
+}: AmountInputProps) => {
   const [focused, setFocused] = useState(false);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (disabled) return;
+
       const raw = e.target.value.replace(/[^0-9.]/g, "");
       const parts = raw.split(".");
-      const formatted = parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : raw;
+      const formatted =
+        parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : raw;
+
       onChange(formatted);
     },
-    [onChange]
+    [onChange, disabled],
   );
+
+  const isActive = focused && !disabled;
 
   return (
     <motion.div
@@ -31,30 +43,46 @@ const AmountInput = ({ value, onChange, symbol }: AmountInputProps) => {
       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
         Amount
       </label>
+
       <div
         className={cn(
           "relative rounded-2xl border-2 transition-all duration-300 overflow-hidden",
-          focused
+          disabled && "opacity-60 cursor-not-allowed bg-muted/30",
+          !disabled && isActive
             ? "input-glow border-primary/40 bg-primary/[0.03]"
-            : "border-border/50 bg-muted/20"
+            : !disabled && "border-border/50 bg-muted/20",
         )}
       >
-        {/* Gradient top line when focused */}
-        {focused && (
+        {isActive && (
           <div className="absolute top-0 left-0 right-0 h-[2px] gradient-brand opacity-60" />
         )}
+
         <input
           type="text"
           inputMode="decimal"
           value={value}
           onChange={handleChange}
-          onFocus={() => setFocused(true)}
+          onFocus={() => !disabled && setFocused(true)}
           onBlur={() => setFocused(false)}
+          disabled={disabled}
           placeholder="0.00"
-          className="w-full bg-transparent px-5 py-5 text-2xl font-heading font-bold text-foreground placeholder:text-muted-foreground/30 outline-none"
+          className={cn(
+            "w-full bg-transparent px-5 py-5 text-2xl font-heading font-bold outline-none",
+            disabled
+              ? "text-muted-foreground cursor-not-allowed"
+              : "text-foreground placeholder:text-muted-foreground/30",
+          )}
         />
+
         {symbol && (
-          <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-heading font-semibold text-muted-foreground/60 bg-muted/50 px-3 py-1 rounded-lg">
+          <span
+            className={cn(
+              "absolute right-5 top-1/2 -translate-y-1/2 text-sm font-heading font-semibold px-3 py-1 rounded-lg",
+              disabled
+                ? "text-muted-foreground/40 bg-muted/40"
+                : "text-muted-foreground/60 bg-muted/50",
+            )}
+          >
             {symbol}
           </span>
         )}

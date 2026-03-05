@@ -1,13 +1,22 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
 import CryptoSelector, { tokens } from "@/components/CryptoSelector";
 import AmountInput from "@/components/AmountInput";
-import TransactionStatus, { type TxStatus } from "@/components/TransactionStatus";
+import TransactionStatus, {
+  type TxStatus,
+} from "@/components/TransactionStatus";
 import QRPayment from "@/components/QRPayment";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Button } from "@/components/ui/button";
 import { Loader2, Info, QrCode, Wallet } from "lucide-react";
+import {
+  useAppKit,
+  useAppKitAccount,
+  useDisconnect,
+} from "@reown/appkit/react";
+import { useAccount } from "wagmi";
+import { ITx } from "@/types/tx.types";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -22,13 +31,32 @@ const demoAddresses: Record<string, string> = {
 };
 
 const Index = () => {
+  const [amount, setAmount] = useState<string>("");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
+  const [tx, setTx] = useState<ITx | null>(null);
   const [txStatus, setTxStatus] = useState<TxStatus>("idle");
   const [showQR, setShowQR] = useState(false);
 
+  const { open } = useAppKit();
+  const { isConnected } = useAppKitAccount();
+  const { disconnect } = useDisconnect();
+
+  const params = new URLSearchParams(window.location.search);
+
+  useEffect(() => {
+    if (!params) return;
+
+    const originAmount = params.get("amount");
+    const currency = params.get("currency");
+    const webhook = params.get("webhook");
+
+    setAmount(originAmount);
+    setSelectedToken(currency);
+  }, [params]);
+
   const token = tokens.find((t) => t.id === selectedToken);
-  const canPay = selectedToken && amount && parseFloat(amount) > 0 && txStatus === "idle";
+  const canPay =
+    selectedToken && amount && parseFloat(amount) > 0 && txStatus === "idle";
 
   const simulatePayment = useCallback(async () => {
     setTxStatus("wallet");
@@ -63,14 +91,20 @@ const Index = () => {
         className="relative z-10 flex items-center gap-3 mb-10"
       >
         <div className="relative">
-          <img src={logo} alt="Charlie Unicorn AI" className="w-14 h-14 rounded-2xl shadow-xl" />
+          <img
+            src={logo}
+            alt="Charlie Unicorn AI"
+            className="w-14 h-14 rounded-2xl shadow-xl"
+          />
           <div className="absolute inset-0 rounded-2xl ring-2 ring-primary/20" />
         </div>
         <div>
           <h1 className="text-2xl font-heading font-bold gradient-brand-text leading-tight">
             Charlie Unicorn AI
           </h1>
-          <p className="text-xs text-muted-foreground">Secure Crypto Payments</p>
+          <p className="text-xs text-muted-foreground">
+            Secure Crypto Payments
+          </p>
         </div>
       </motion.header>
 
@@ -97,7 +131,9 @@ const Index = () => {
             ) : (
               <>
                 <div className="text-center pt-2">
-                  <h2 className="font-heading text-xl font-bold text-foreground">Checkout</h2>
+                  <h2 className="font-heading text-xl font-bold text-foreground">
+                    Checkout
+                  </h2>
                   <p className="text-sm text-muted-foreground mt-1.5">
                     Choose your token and amount
                   </p>
@@ -105,47 +141,85 @@ const Index = () => {
 
                 <CryptoSelector
                   selected={selectedToken}
-                  onSelect={(id) => { setSelectedToken(id); resetTx(); }}
+                  onSelect={setSelectedToken}
                 />
 
                 <AmountInput
                   value={amount}
-                  onChange={(v) => { setAmount(v); resetTx(); }}
+                  onChange={setAmount}
+                  disabled
                   symbol={token?.symbol}
                 />
 
                 {/* Fee note */}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground/70 px-1">
                   <Info className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Network fees apply and are estimated at transaction time.</span>
+                  <span>
+                    Network fees apply and are estimated at transaction time.
+                  </span>
                 </div>
 
                 {/* Action buttons */}
                 <div className="space-y-3">
-                  <Button
-                    variant="pay"
-                    size="lg"
-                    className="w-full h-14 rounded-2xl text-base"
-                    disabled={!canPay || (txStatus !== "idle" && txStatus !== "success" && txStatus !== "error")}
-                    onClick={txStatus === "success" || txStatus === "error" ? resetTx : simulatePayment}
-                  >
-                    {txStatus === "wallet" || txStatus === "confirming" ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        {txStatus === "wallet" ? "Awaiting Wallet…" : "Confirming…"}
-                      </>
-                    ) : txStatus === "success" || txStatus === "error" ? (
-                      <>
+                  {!isConnected ? (
+                    <Button
+                      variant="pay"
+                      size="lg"
+                      className="w-full h-14 rounded-2xl text-base"
+                      onClick={() => open()}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      Connect
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="pay"
+                        size="lg"
+                        className="w-full h-14 rounded-2xl text-base"
+                        disabled={
+                          !canPay ||
+                          (txStatus !== "idle" &&
+                            txStatus !== "success" &&
+                            txStatus !== "error")
+                        }
+                        onClick={
+                          txStatus === "success" || txStatus === "error"
+                            ? resetTx
+                            : simulatePayment
+                        }
+                      >
+                        {txStatus === "wallet" || txStatus === "confirming" ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            {txStatus === "wallet"
+                              ? "Awaiting Wallet…"
+                              : "Confirming…"}
+                          </>
+                        ) : txStatus === "success" || txStatus === "error" ? (
+                          <>
+                            <Wallet className="w-5 h-5" />
+                            Pay Again
+                          </>
+                        ) : (
+                          <>
+                            <Wallet className="w-5 h-5" />
+                            Pay Now
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="lg"
+                        className="w-full h-14 rounded-2xl text-base"
+                        onClick={() => disconnect()}
+                      >
                         <Wallet className="w-5 h-5" />
-                        Pay Again
-                      </>
-                    ) : (
-                      <>
-                        <Wallet className="w-5 h-5" />
-                        Pay Now
-                      </>
-                    )}
-                  </Button>
+                        Disconnect
+                      </Button>
+                    </>
+                  )}
 
                   {canPay && txStatus === "idle" && (
                     <motion.button
