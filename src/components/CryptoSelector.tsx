@@ -78,17 +78,27 @@ const tokens: CryptoToken[] = [
 interface CryptoSelectorProps {
   selected: string | null;
   onSelect: (id: string) => void;
+  disabled?: boolean;
 }
 
-const CryptoSelector = ({ selected, onSelect }: CryptoSelectorProps) => {
+const CryptoSelector = ({
+  selected,
+  onSelect,
+  disabled = false,
+}: CryptoSelectorProps) => {
   const [expanded, setExpanded] = useState(true);
   const selectedToken = tokens.find((t) => t.id === selected);
 
   return (
-    <div className="space-y-3">
+    <div className={cn("space-y-3")}>
+      {/* Header */}
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full"
+        onClick={() => !disabled && setExpanded(!expanded)}
+        disabled={disabled}
+        className={cn(
+          "flex items-center justify-between w-full",
+          disabled && "cursor-not-allowed",
+        )}
       >
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest cursor-pointer">
           Select Cryptocurrency
@@ -108,11 +118,7 @@ const CryptoSelector = ({ selected, onSelect }: CryptoSelectorProps) => {
           animate={{ opacity: 1 }}
           className="flex items-center gap-3 p-3 rounded-xl glass-card border border-primary/30 glow-border"
         >
-          <div
-            className={cn(
-              "text-lg w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br",
-            )}
-          >
+          <div className="text-lg w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br">
             <img
               src={selectedToken.icon}
               alt={selectedToken.name}
@@ -144,26 +150,32 @@ const CryptoSelector = ({ selected, onSelect }: CryptoSelectorProps) => {
             <div className="grid grid-cols-2 gap-2">
               {tokens.map((token, i) => {
                 const isSelected = selected === token.id;
+
                 return (
                   <motion.button
                     key={token.id}
+                    disabled={disabled}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
                     onClick={() => {
+                      if (disabled) return;
                       onSelect(token.id);
                       setExpanded(false);
                     }}
                     className={cn(
-                      "relative group flex items-center gap-2.5 p-3 rounded-xl border transition-all duration-200 cursor-pointer",
-                      isSelected
-                        ? "border-primary/50 glow-border-active bg-primary/5"
-                        : "border-border/50 hover:border-muted-foreground/30 hover:bg-muted/30",
+                      "relative group flex items-center gap-2.5 p-3 rounded-xl border transition-all duration-200",
+                      disabled && "cursor-not-allowed opacity-60",
+                      !disabled &&
+                        (isSelected
+                          ? "border-primary/50 glow-border-active bg-primary/5"
+                          : "border-border/50 hover:border-muted-foreground/30 hover:bg-muted/30"),
                     )}
                   >
                     <div
                       className={cn(
-                        "text-lg w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
+                        "text-lg w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br shadow-lg transition-transform",
+                        !disabled && "group-hover:scale-110",
                       )}
                     >
                       <img
@@ -172,6 +184,7 @@ const CryptoSelector = ({ selected, onSelect }: CryptoSelectorProps) => {
                         className="w-6 h-6 object-cover"
                       />
                     </div>
+
                     <div className="text-left flex-1 min-w-0">
                       <p className="font-heading font-semibold text-sm text-foreground">
                         {token.symbol}
@@ -182,6 +195,7 @@ const CryptoSelector = ({ selected, onSelect }: CryptoSelectorProps) => {
                         </p>
                       )}
                     </div>
+
                     {isSelected && (
                       <motion.div
                         initial={{ scale: 0 }}

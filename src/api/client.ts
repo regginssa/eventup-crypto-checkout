@@ -1,9 +1,11 @@
+import { IApiRes } from "@/types/api.types";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 export async function api<T>(
   path: string,
   options: RequestInit = {},
-): Promise<T> {
+): Promise<IApiRes<T>> {
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
@@ -12,9 +14,11 @@ export async function api<T>(
     ...options,
   });
 
+  const json = await res.json();
+
   if (!res.ok) {
-    throw new Error("API request failed");
+    throw new Error(json?.message || "API request failed");
   }
 
-  return res.json();
+  return json as IApiRes<T>;
 }

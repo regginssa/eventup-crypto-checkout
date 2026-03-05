@@ -17,6 +17,8 @@ import {
 } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { ITx } from "@/types/tx.types";
+import { TxAPI } from "@/api/tx.api";
+import { useToast } from "@/hooks/use-toast";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -36,7 +38,9 @@ const Index = () => {
   const [tx, setTx] = useState<ITx | null>(null);
   const [txStatus, setTxStatus] = useState<TxStatus>("idle");
   const [showQR, setShowQR] = useState(false);
+  const [initLoading, setInitLoading] = useState<boolean>(false);
 
+  const { toast } = useToast();
   const { open } = useAppKit();
   const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
@@ -44,19 +48,50 @@ const Index = () => {
   const params = new URLSearchParams(window.location.search);
 
   useEffect(() => {
-    if (!params) return;
+    async function init() {
+      const amount = params.get("amount");
+      const currency = params.get("currency");
+      const webhook = params.get("webhook");
 
-    const originAmount = params.get("amount");
-    const currency = params.get("currency");
-    const webhook = params.get("webhook");
+      if (!amount || !currency || !webhook) return;
 
-    setAmount(originAmount);
-    setSelectedToken(currency);
-  }, [params]);
+      setInitLoading(true);
+
+      const data: ITx = {
+        amount,
+        currency,
+        webhookUrl: webhook,
+        from: "",
+        to: "",
+        status: "pending",
+        txHash: "",
+      };
+
+      const res = await TxAPI.create(data);
+
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Failed to initialize" });
+        setInitLoading(false);
+        return;
+      }
+
+      const newTx = res.data;
+      setTx(newTx);
+      setAmount(newTx.amount);
+      setSelectedToken(newTx.currency);
+      setInitLoading(false);
+    }
+
+    // init();
+  }, []);
 
   const token = tokens.find((t) => t.id === selectedToken);
   const canPay =
-    selectedToken && amount && parseFloat(amount) > 0 && txStatus === "idle";
+    selectedToken &&
+    amount &&
+    parseFloat(amount) > 0 &&
+    tx &&
+    tx.status === "pending";
 
   const simulatePayment = useCallback(async () => {
     setTxStatus("wallet");
@@ -71,6 +106,10 @@ const Index = () => {
   }, []);
 
   const resetTx = () => setTxStatus("idle");
+
+  if (initLoading) {
+    return <InitSpinner />;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-4">
@@ -142,6 +181,7 @@ const Index = () => {
                 <CryptoSelector
                   selected={selectedToken}
                   onSelect={setSelectedToken}
+                  disabled
                 />
 
                 <AmountInput
@@ -221,7 +261,7 @@ const Index = () => {
                     </>
                   )}
 
-                  {canPay && txStatus === "idle" && (
+                  {/* {canPay && txStatus === "idle" && (
                     <motion.button
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -231,7 +271,7 @@ const Index = () => {
                       <QrCode className="w-4 h-4" />
                       Pay via QR Code
                     </motion.button>
-                  )}
+                  )} */}
                 </div>
 
                 <TransactionStatus
@@ -256,5 +296,69 @@ const Index = () => {
     </div>
   );
 };
+
+const InitSpinner = () => (
+  <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    {/* Background glow */}
+    <div className="absolute -top-60 -left-60 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[160px]" />
+    <div className="absolute -bottom-60 -right-60 w-[500px] h-[500px] rounded-full bg-accent/10 blur-[160px]" />
+
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4 }}
+      className="relative z-10"
+    >
+      {/* Gradient border */}
+      <div className="p-[1px] rounded-3xl bg-gradient-to-b from-primary/30 via-border/40 to-border/20">
+        <div className="glass-card rounded-3xl px-10 py-9 flex flex-col items-center gap-6 text-center">
+          {/* Animated spinner */}
+          <div className="relative flex items-center justify-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+              className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary"
+            />
+
+            {/* subtle glow */}
+            <div className="absolute w-16 h-16 rounded-full bg-primary/10 blur-xl" />
+          </div>
+
+          {/* Text */}
+          <div className="space-y-1">
+            <p className="text-lg font-semibold gradient-brand-text">
+              Initializing Payment
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Preparing secure transaction…
+            </p>
+          </div>
+
+          {/* animated dots */}
+          <motion.div className="flex gap-1" initial="hidden" animate="visible">
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="w-2 h-2 rounded-full bg-primary/70"
+                variants={{
+                  hidden: { opacity: 0.2, y: 0 },
+                  visible: {
+                    opacity: [0.2, 1, 0.2],
+                    y: [0, -4, 0],
+                  },
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.2,
+                  delay: i * 0.2,
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  </div>
+);
 
 export default Index;

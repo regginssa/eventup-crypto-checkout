@@ -7,6 +7,7 @@ export type TTxStatus =
   | "failed";
 
 export interface ITx {
+  _id?: string;
   amount: string;
   currency: string;
   from: string;
