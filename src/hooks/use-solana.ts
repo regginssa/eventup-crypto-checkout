@@ -21,7 +21,6 @@ import {
 import { useToast } from "./use-toast";
 import { solana } from "@reown/appkit/networks";
 
-const DEPOSIT_ADDRESS = import.meta.env.VITE_DEPOSIT_SOL_WALLET_ADDRESS;
 const USDT_MINT_ADDRESS = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 const USDC_MINT_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const CHRLE_MINT_ADDRESS = "G1ij1UjWBcUFtVHz5GVDAopPNMQcbwtdegH94LU6Jray";
@@ -57,7 +56,17 @@ export const useSolana = () => {
   const pay = async (
     tokenType: "sol" | "usdt-sol" | "usdc-sol" | "chrle" | "babyu",
     amount: string,
+    depositAddress: string,
   ) => {
+    if (depositAddress === "") {
+      toast?.({
+        variant: "destructive",
+        title: "Incorrect deposit address",
+        description: "Please reload page.",
+      });
+      return null;
+    }
+
     if (!address) {
       toast?.({
         variant: "destructive",
@@ -104,7 +113,7 @@ export const useSolana = () => {
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: wallet,
-            toPubkey: new PublicKey(DEPOSIT_ADDRESS),
+            toPubkey: new PublicKey(depositAddress),
             lamports: Number(amount) * LAMPORTS_PER_SOL,
           }),
         );
@@ -118,7 +127,7 @@ export const useSolana = () => {
 
         const receiverTokenAccount = await getAssociatedTokenAddress(
           token.mint,
-          new PublicKey(DEPOSIT_ADDRESS),
+          new PublicKey(depositAddress),
         );
 
         const amountInSmallest = Number(amount) * Math.pow(10, token.decimals);

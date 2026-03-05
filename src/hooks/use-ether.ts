@@ -17,7 +17,6 @@ import { mainnet } from "@reown/appkit/networks";
 
 const USDT_ADDRESS = getAddress("0xdac17f958d2ee523a2206206994597c13d831ec7");
 const USDC_ADDRESS = getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
-const DEPOSIT_ADDRESS = import.meta.env.VITE_DEPOSIT_ETH_WALLET_ADDRESS;
 
 export const useEther = () => {
   const { walletProvider } = useAppKitProvider<Provider>("eip155");
@@ -28,7 +27,17 @@ export const useEther = () => {
   const pay = async (
     tokenType: "eth" | "usdt-eth" | "usdc-eth",
     amount: string,
+    depositAddress: string,
   ) => {
+    if (depositAddress === "") {
+      toast?.({
+        variant: "destructive",
+        title: "Incorrect deposit address",
+        description: "Please reload page.",
+      });
+      return null;
+    }
+
     if (!address) {
       toast?.({
         variant: "destructive",
@@ -47,7 +56,7 @@ export const useEther = () => {
       return null;
     }
 
-    if (!DEPOSIT_ADDRESS) {
+    if (!depositAddress) {
       toast?.({
         variant: "destructive",
         title: "Deposit address unavailable",
@@ -58,7 +67,7 @@ export const useEther = () => {
 
     try {
       const transaction = {
-        to: DEPOSIT_ADDRESS,
+        to: depositAddress,
         value: parseUnits(amount, "ether"),
       };
 
@@ -83,7 +92,7 @@ export const useEther = () => {
         const amountBigInt = parseUnits(amount, 6);
 
         // Send token
-        const tx = await tokenContract.transfer(DEPOSIT_ADDRESS, amountBigInt);
+        const tx = await tokenContract.transfer(depositAddress, amountBigInt);
         return tx;
       }
     } catch (err) {

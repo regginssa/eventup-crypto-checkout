@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEther } from "@/hooks/use-ether";
 import { mainnet, solana } from "@reown/appkit/networks";
 import { useSolana } from "@/hooks/use-solana";
+import { AddressAPI } from "@/api/address.api";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -35,6 +36,10 @@ const demoAddresses: Record<string, string> = {
 };
 
 const Index = () => {
+  const [depositAddresses, setDepositAddresses] = useState<{
+    eth: string;
+    sol: string;
+  }>({ eth: "", sol: "" });
   const [amount, setAmount] = useState<string>("0.0001");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [tx, setTx] = useState<ITx | null>(null);
@@ -83,6 +88,9 @@ const Index = () => {
 
       // const newTx = res.data;
       // setTx(newTx);
+
+      const res = await AddressAPI.getAll();
+      if (res.data) setDepositAddresses(res.data);
       setAmount(amount);
       setSelectedToken(currency.toLowerCase());
       setInitLoading(false);
@@ -108,9 +116,9 @@ const Index = () => {
     let tx = null;
 
     if (isEth) {
-      tx = await payEth(selectedToken as any, amount);
+      tx = await payEth(selectedToken as any, amount, depositAddresses.eth);
     } else {
-      tx = await paySol(selectedToken as any, amount);
+      tx = await paySol(selectedToken as any, amount, depositAddresses.sol);
     }
 
     if (!tx) {
