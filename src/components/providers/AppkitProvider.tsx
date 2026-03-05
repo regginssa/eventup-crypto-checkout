@@ -1,44 +1,45 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiProvider } from "wagmi";
-import { mainnet } from "@reown/appkit/networks";
+import { mainnet, solana } from "@reown/appkit/networks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import React from "react";
+import { SolanaAdapter } from "@reown/appkit-adapter-solana/react";
 
-// 0. Setup queryClient
 const queryClient = new QueryClient();
 
-// 1. Get projectId from https://dashboard.reown.com
 const projectId = import.meta.env.VITE_APPKIT_PROJECT_ID;
 
-// 2. Create a metadata object - optional
 const metadata = {
   name: "Cryptocurrency Checkout | Charlie Unicorn AI",
   description:
     "Cryptocurrency payment mini-checkout based on Charlie Unicorn AI ecosystem",
-  url: "https://example.com", // origin must match your domain & subdomain
+  url: "https://example.com",
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 
-// 3. Set the networks
-const networks = [mainnet];
+const evmNetworks = [mainnet];
+const solanaNetworks = [solana];
 
-// 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
-  networks,
+  networks: evmNetworks,
   projectId,
   ssr: true,
   syncConnectedChain: false,
 });
 
-// 5. Create modal
+const solanaAdapter = new SolanaAdapter();
+
 createAppKit({
-  adapters: [wagmiAdapter],
-  networks: networks as any,
+  adapters: [wagmiAdapter, solanaAdapter],
+  networks: [...evmNetworks, ...solanaNetworks] as any,
   projectId,
   metadata,
   features: {
     analytics: true,
+    email: false,
+    socials: false,
+    swaps: false,
   },
 });
 

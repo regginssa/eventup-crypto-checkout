@@ -5,7 +5,7 @@ import {
   Contract,
   JsonRpcSigner,
   Provider,
-  formatEther,
+  getAddress,
   parseUnits,
 } from "ethers";
 import {
@@ -13,22 +13,18 @@ import {
   useAppKitNetworkCore,
   useAppKitProvider,
 } from "@reown/appkit/react";
+import { mainnet } from "@reown/appkit/networks";
 
-const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13d831ec7";
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const USDT_ADDRESS = getAddress("0xdac17f958d2ee523a2206206994597c13d831ec7");
+const USDC_ADDRESS = getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 const DEPOSIT_ADDRESS = import.meta.env.VITE_DEPOSIT_ETH_WALLET_ADDRESS;
 
 export const useEther = () => {
   const { walletProvider } = useAppKitProvider<Provider>("eip155");
   const { address } = useAppKitAccount();
   const { chainId } = useAppKitNetworkCore();
-
   const { toast } = useToast();
 
-  /**
-   * @param tokenType  "eth" | "usdt-eth" | "usdc-eth"
-   * @param amount  Human‑readable amount string (e.g., "10")
-   */
   const pay = async (
     tokenType: "eth" | "usdt-eth" | "usdc-eth",
     amount: string,
@@ -39,16 +35,16 @@ export const useEther = () => {
         title: "Wallet not connected",
         description: "Please connect your wallet to proceed.",
       });
-      return false;
+      return null;
     }
 
-    if (!chainId || chainId !== 1) {
+    if (!chainId || chainId !== mainnet.id) {
       toast?.({
         variant: "destructive",
         title: "Incorrect network",
         description: "Switch your wallet to Ethereum Mainnet to continue.",
       });
-      return false;
+      return null;
     }
 
     if (!DEPOSIT_ADDRESS) {
@@ -57,7 +53,7 @@ export const useEther = () => {
         title: "Deposit address unavailable",
         description: "Please refresh or try again later.",
       });
-      return false;
+      return null;
     }
 
     try {

@@ -11,13 +11,16 @@ import { Loader2, Info, QrCode, Wallet } from "lucide-react";
 import {
   useAppKit,
   useAppKitAccount,
+  useAppKitNetwork,
+  useAppKitNetworkCore,
   useDisconnect,
 } from "@reown/appkit/react";
-import { useAccount } from "wagmi";
 import { ITx, TTxStatus } from "@/types/tx.types";
 import { TxAPI } from "@/api/tx.api";
 import { useToast } from "@/hooks/use-toast";
 import { useEther } from "@/hooks/use-ether";
+import { mainnet, solana } from "@reown/appkit/networks";
+import { useSolana } from "@/hooks/use-solana";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -43,7 +46,10 @@ const Index = () => {
   const { open } = useAppKit();
   const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
+  const { chainId } = useAppKitNetworkCore();
+  const { switchNetwork } = useAppKitNetwork();
   const { pay: payEth } = useEther();
+  const { pay: paySol } = useSolana();
 
   const params = new URLSearchParams(window.location.search);
 
@@ -86,17 +92,32 @@ const Index = () => {
   }, []);
 
   const handlePay = async () => {
-    if (amount === "")
+    if (amount === "" || Number(amount) <= 0)
       return toast({ variant: "destructive", title: "Amount is incorrect" });
+
+    if (selectedToken === "") {
+      return toast({
+        variant: "destructive",
+        title: "Selected token is incorrect",
+      });
+    }
 
     setTxStatus("confirming");
     const isEth = selectedToken.includes("eth");
 
+    let tx = null;
+
     if (isEth) {
-      const tx = await payEth(selectedToken as any, amount);
+      tx = await payEth(selectedToken as any, amount);
+    } else {
+      tx = await paySol(selectedToken as any, amount);
     }
 
-    setTxStatus("idle");
+    if (!tx) {
+      setTxStatus("idle");
+    } else {
+      setTxStatus("confirmed");
+    }
   };
 
   const token = tokens.find((t) => t.id === selectedToken);
@@ -222,7 +243,7 @@ const Index = () => {
                         ) : (
                           <>
                             <Wallet className="w-5 h-5" />
-                            Pay Now
+                            {txStatus === "confirmed" ? "Confirmed" : "Pay Now"}
                           </>
                         )}
                       </Button>
