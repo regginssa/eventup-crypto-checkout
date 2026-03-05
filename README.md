@@ -1,73 +1,108 @@
-# Welcome to your Lovable project
+# Mini Crypto Checkout Based On Charlie Unicorn AI (Frontend)
 
-## Project info
+A lightweight React/Vite frontend for the Mini Charlie Crypto Checkout dApp. It lets users select a cryptocurrency, enter an amount, view a QR code, and follow a transaction status – all using on-chain data via the app’s API.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 🚀 Project Overview
 
-There are several ways of editing your application.
+This repository contains the **frontend** for Charlie’s checkout experience.
 
-**Use Lovable**
+- **Purpose**: provide a clean, mobile-friendly UI that connects to the backend APIs for addresses, transactions, and web3 interactions.
+- **How it works**:
+  1. User picks a token and amount.
+  2. App requests a payment address from the backend.
+  3. A QR is shown; user pays from their wallet.
+  4. The frontend polls transaction status until confirmation.
+  5. Status updates (pending, success, failure) are displayed in real time.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+> The backend lives in a separate repo; this repo only handles the client-side portion.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🗂️ Repository Structure
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+├── public/              Static assets (icons, robots.txt)
+└── src/
+    ├── abis/             Contract ABIs (ERC20, etc.)
+    ├── api/              REST clients for address, tx, web3, shared client
+    ├── assets/           Images & styles
+    ├── components/       Re-usable UI/blocks (+ shadcn-ui wrappers)
+    │   ├── providers/    Context providers (Appkit, etc.)
+    │   └── ui/           shadcn-ui components (button, input, etc.)
+    ├── hooks/            Custom hooks (use-ether, use-solana, etc.)
+    ├── lib/              Utility functions
+    ├── pages/            Route components (Index, 404)
+    ├── test/             Vitest setup & example tests
+    └── types/            Shared TypeScript interfaces
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🛠️ Getting Started
 
-**Use GitHub Codespaces**
+### Prerequisites
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Node.js (>=16) and npm/yarn/pnpm
+- Git
 
-## What technologies are used for this project?
+### Installation
 
-This project is built with:
+```bash
+git clone <YOUR_GIT_URL>
+cd frontend
+npm install      # or yarn / pnpm
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Development
 
-## How can I deploy this project?
+```bash
+npm run dev       # starts Vite dev server at http://localhost:5173
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+The app auto-reloads on file changes.
 
-## Can I connect a custom domain to my Lovable project?
+### Testing
 
-Yes, you can!
+```bash
+npm run test      # runs Vitest unit tests
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Build & Preview
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+npm run build     # produces optimized `dist/`
+npm run preview   # serve the production build locally
+```
+
+---
+
+## 🧩 Key Technologies
+
+- **Vite** – fast build and dev experience
+- **React + TypeScript** – UI & type safety
+- **Tailwind CSS** – utility-first styling
+- **shadcn-ui** – design system components
+- **Vitest** – unit testing framework
+
+---
+
+## 🔗 Deployment
+
+Deploy by building the project and hosting the `dist` folder on any static-file server or through your chosen platform (Netlify, Vercel, static S3, etc.).  
+If you’re using Lovable, simply publish from the dashboard.
+
+---
+
+## 📜 Notes
+
+- API base URL is configured in `src/api/client.ts` (can be swapped for staging/production).
+- Wallet support currently includes Ethereum (EVM) and Solana via custom hooks.
+- Add or update tokens by editing `src/abis` and adjusting the selectors/hooks accordingly.
+
+---
+
+Feel free to expand this README with additional sections (e.g. Contributing, FAQ) as the project grows.
+
+Happy coding! 🎉
