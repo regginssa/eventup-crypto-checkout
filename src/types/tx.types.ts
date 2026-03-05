@@ -1,4 +1,5 @@
 export type TTxStatus =
+  | "idle"
   | "pending"
   | "detected"
   | "confirming"

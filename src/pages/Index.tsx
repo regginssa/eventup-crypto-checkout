@@ -3,9 +3,7 @@ import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
 import CryptoSelector, { tokens } from "@/components/CryptoSelector";
 import AmountInput from "@/components/AmountInput";
-import TransactionStatus, {
-  type TxStatus,
-} from "@/components/TransactionStatus";
+import TransactionStatus from "@/components/TransactionStatus";
 import QRPayment from "@/components/QRPayment";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Button } from "@/components/ui/button";
@@ -16,9 +14,10 @@ import {
   useDisconnect,
 } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
-import { ITx } from "@/types/tx.types";
+import { ITx, TTxStatus } from "@/types/tx.types";
 import { TxAPI } from "@/api/tx.api";
 import { useToast } from "@/hooks/use-toast";
+import { useEther } from "@/hooks/use-ether";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -33,10 +32,10 @@ const demoAddresses: Record<string, string> = {
 };
 
 const Index = () => {
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState<string>("0.0001");
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [tx, setTx] = useState<ITx | null>(null);
-  const [txStatus, setTxStatus] = useState<TxStatus>("idle");
+  const [txStatus, setTxStatus] = useState<TTxStatus>("idle");
   const [showQR, setShowQR] = useState(false);
   const [initLoading, setInitLoading] = useState<boolean>(false);
 
@@ -44,6 +43,7 @@ const Index = () => {
   const { open } = useAppKit();
   const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
+  const { pay: payEth } = useEther();
 
   const params = new URLSearchParams(window.location.search);
 
@@ -57,55 +57,49 @@ const Index = () => {
 
       setInitLoading(true);
 
-      const data: ITx = {
-        amount,
-        currency,
-        webhookUrl: webhook,
-        from: "",
-        to: "",
-        status: "pending",
-        txHash: "",
-      };
+      // const data: ITx = {
+      //   amount,
+      //   currency,
+      //   webhookUrl: webhook,
+      //   from: "",
+      //   to: "",
+      //   status: "pending",
+      //   txHash: "",
+      // };
 
-      const res = await TxAPI.create(data);
+      // const res = await TxAPI.create(data);
 
-      if (!res.ok) {
-        toast({ variant: "destructive", title: "Failed to initialize" });
-        setInitLoading(false);
-        return;
-      }
+      // if (!res.ok) {
+      //   toast({ variant: "destructive", title: "Failed to initialize" });
+      //   setInitLoading(false);
+      //   return;
+      // }
 
-      const newTx = res.data;
-      setTx(newTx);
-      setAmount(newTx.amount);
-      setSelectedToken(newTx.currency);
+      // const newTx = res.data;
+      // setTx(newTx);
+      setAmount(amount);
+      setSelectedToken(currency.toLowerCase());
       setInitLoading(false);
     }
 
-    // init();
+    init();
   }, []);
+
+  const handlePay = async () => {
+    if (amount === "")
+      return toast({ variant: "destructive", title: "Amount is incorrect" });
+
+    setTxStatus("confirming");
+    const isEth = selectedToken.includes("eth");
+
+    if (isEth) {
+      const tx = await payEth(selectedToken as any, amount);
+    }
+
+    setTxStatus("idle");
+  };
 
   const token = tokens.find((t) => t.id === selectedToken);
-  const canPay =
-    selectedToken &&
-    amount &&
-    parseFloat(amount) > 0 &&
-    tx &&
-    tx.status === "pending";
-
-  const simulatePayment = useCallback(async () => {
-    setTxStatus("wallet");
-    await new Promise((r) => setTimeout(r, 2000));
-    setTxStatus("confirming");
-    await new Promise((r) => setTimeout(r, 3000));
-    if (Math.random() > 0.3) {
-      setTxStatus("success");
-    } else {
-      setTxStatus("error");
-    }
-  }, []);
-
-  const resetTx = () => setTxStatus("idle");
 
   if (initLoading) {
     return <InitSpinner />;
@@ -217,29 +211,13 @@ const Index = () => {
                         variant="pay"
                         size="lg"
                         className="w-full h-14 rounded-2xl text-base"
-                        disabled={
-                          !canPay ||
-                          (txStatus !== "idle" &&
-                            txStatus !== "success" &&
-                            txStatus !== "error")
-                        }
-                        onClick={
-                          txStatus === "success" || txStatus === "error"
-                            ? resetTx
-                            : simulatePayment
-                        }
+                        disabled={txStatus === "confirmed"}
+                        onClick={handlePay}
                       >
-                        {txStatus === "wallet" || txStatus === "confirming" ? (
+                        {txStatus === "confirming" ? (
                           <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            {txStatus === "wallet"
-                              ? "Awaiting Wallet…"
-                              : "Confirming…"}
-                          </>
-                        ) : txStatus === "success" || txStatus === "error" ? (
-                          <>
-                            <Wallet className="w-5 h-5" />
-                            Pay Again
+                            Confirming...
                           </>
                         ) : (
                           <>

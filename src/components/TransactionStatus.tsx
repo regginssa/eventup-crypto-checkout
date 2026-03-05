@@ -1,35 +1,34 @@
 import { Loader2, CheckCircle2, XCircle, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-
-export type TxStatus = "idle" | "wallet" | "confirming" | "success" | "error";
+import { TTxStatus } from "@/types/tx.types";
 
 interface TransactionStatusProps {
-  status: TxStatus;
+  status: TTxStatus;
   errorMessage?: string;
 }
 
-const statusConfig: Record<TxStatus, { icon: React.ReactNode; text: string; color: string; bg: string }> = {
+const statusConfig: Record<
+  TTxStatus,
+  { icon: React.ReactNode; text: string; color: string; bg: string }
+> = {
   idle: { icon: null, text: "", color: "", bg: "" },
-  wallet: {
-    icon: <Wallet className="w-5 h-5 animate-pulse-glow" />,
-    text: "Waiting for wallet approval…",
-    color: "text-warning",
-    bg: "bg-warning/5 border-warning/20",
-  },
+  detected: { icon: null, text: "", color: "", bg: "" },
+  expired: { icon: null, text: "", color: "", bg: "" },
+  pending: { icon: null, text: "", color: "", bg: "" },
   confirming: {
     icon: <Loader2 className="w-5 h-5 animate-spin-slow" />,
     text: "Confirming on blockchain…",
     color: "text-accent",
     bg: "bg-accent/5 border-accent/20",
   },
-  success: {
+  confirmed: {
     icon: <CheckCircle2 className="w-5 h-5" />,
     text: "Transaction confirmed!",
     color: "text-success",
     bg: "bg-success/5 border-success/20",
   },
-  error: {
+  failed: {
     icon: <XCircle className="w-5 h-5" />,
     text: "Transaction failed",
     color: "text-destructive",
@@ -37,7 +36,10 @@ const statusConfig: Record<TxStatus, { icon: React.ReactNode; text: string; colo
   },
 };
 
-const TransactionStatus = ({ status, errorMessage }: TransactionStatusProps) => {
+const TransactionStatus = ({
+  status,
+  errorMessage,
+}: TransactionStatusProps) => {
   if (status === "idle") return null;
 
   const config = statusConfig[status];
@@ -53,19 +55,19 @@ const TransactionStatus = ({ status, errorMessage }: TransactionStatusProps) => 
         className={cn(
           "flex items-center gap-3 p-4 rounded-xl border",
           config.color,
-          config.bg
+          config.bg,
         )}
       >
         {config.icon}
         <div className="flex-1">
           <p className="font-medium text-sm">{config.text}</p>
-          {status === "error" && errorMessage && (
+          {status === "failed" && errorMessage && (
             <p className="text-xs text-muted-foreground mt-1">{errorMessage}</p>
           )}
         </div>
         {status === "confirming" && (
           <div className="flex gap-1">
-            {[0, 1, 2].map(i => (
+            {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
                 className="w-1.5 h-1.5 rounded-full bg-accent"

@@ -1,0 +1,103 @@
+import ERC20_ABI from "../abis/ERC20_ABI.json";
+import { useToast } from "./use-toast";
+import {
+  BrowserProvider,
+  Contract,
+  JsonRpcSigner,
+  Provider,
+  formatEther,
+  parseUnits,
+} from "ethers";
+import {
+  useAppKitAccount,
+  useAppKitNetworkCore,
+  useAppKitProvider,
+} from "@reown/appkit/react";
+
+const USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13d831ec7";
+const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const DEPOSIT_ADDRESS = import.meta.env.VITE_DEPOSIT_ETH_WALLET_ADDRESS;
+
+export const useEther = () => {
+  const { walletProvider } = useAppKitProvider<Provider>("eip155");
+  const { address } = useAppKitAccount();
+  const { chainId } = useAppKitNetworkCore();
+
+  const { toast } = useToast();
+
+  /**
+   * @param tokenType  "eth" | "usdt-eth" | "usdc-eth"
+   * @param amount  Human‑readable amount string (e.g., "10")
+   */
+  const pay = async (
+    tokenType: "eth" | "usdt-eth" | "usdc-eth",
+    amount: string,
+  ) => {
+    if (!address) {
+      toast?.({
+        variant: "destructive",
+        title: "Wallet not connected",
+        description: "Please connect your wallet to proceed.",
+      });
+      return false;
+    }
+
+    if (!chainId || chainId !== 1) {
+      toast?.({
+        variant: "destructive",
+        title: "Incorrect network",
+        description: "Switch your wallet to Ethereum Mainnet to continue.",
+      });
+      return false;
+    }
+
+    if (!DEPOSIT_ADDRESS) {
+      toast?.({
+        variant: "destructive",
+        title: "Deposit address unavailable",
+        description: "Please refresh or try again later.",
+      });
+      return false;
+    }
+
+    try {
+      const transaction = {
+        to: DEPOSIT_ADDRESS,
+        value: parseUnits(amount, "ether"),
+      };
+
+      const provider = new BrowserProvider(walletProvider as any, chainId);
+      const signer = new JsonRpcSigner(provider, address);
+
+      if (tokenType === "eth") {
+        const tx = await signer.sendTransaction(transaction);
+        return tx;
+      } else {
+        const tokenContractAddress =
+          tokenType === "usdt-eth" ? USDT_ADDRESS : USDC_ADDRESS;
+
+        // Create a contract instance
+        const tokenContract = new Contract(
+          tokenContractAddress,
+          ERC20_ABI,
+          signer,
+        );
+
+        // Convert human-readable amount to token units
+        const amountBigInt = parseUnits(amount, 6);
+
+        // Send token
+        const tx = await tokenContract.transfer(DEPOSIT_ADDRESS, amountBigInt);
+        return tx;
+      }
+    } catch (err) {
+      console.error("[pay eth error]: ", err);
+      toast({ variant: "destructive", title: "Payment failed" });
+      return null;
+    }
+  };
+
+  return {
+    pay,
+  };
+};
