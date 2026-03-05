@@ -16,4 +16,5 @@ export interface ITx {
   txHash: string;
   status: TTxStatus;
   webhookUrl: string;
+  metadata: any;
 }

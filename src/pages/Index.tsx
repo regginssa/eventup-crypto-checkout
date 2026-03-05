@@ -7,7 +7,7 @@ import TransactionStatus from "@/components/TransactionStatus";
 import QRPayment from "@/components/QRPayment";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Button } from "@/components/ui/button";
-import { Loader2, Info, QrCode, Wallet } from "lucide-react";
+import { Loader2, Info, Wallet } from "lucide-react";
 import {
   useAppKit,
   useAppKitAccount,
@@ -19,10 +19,10 @@ import { ITx, TTxStatus } from "@/types/tx.types";
 import { TxAPI } from "@/api/tx.api";
 import { useToast } from "@/hooks/use-toast";
 import { useEther } from "@/hooks/use-ether";
-import { mainnet, solana } from "@reown/appkit/networks";
 import { useSolana } from "@/hooks/use-solana";
 import { AddressAPI } from "@/api/address.api";
 import { Web3API } from "@/api/web3.api";
+import CryptoJS from "crypto-js";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -52,46 +52,72 @@ const Index = () => {
   const { open } = useAppKit();
   const { isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
-  const { chainId } = useAppKitNetworkCore();
-  const { switchNetwork } = useAppKitNetwork();
   const { pay: payEth } = useEther();
   const { pay: paySol } = useSolana();
 
-  const params = new URLSearchParams(window.location.search);
-
   useEffect(() => {
     async function init() {
-      const amount = params.get("amount");
-      const currency = params.get("currency");
-      const webhook = params.get("webhook");
+      const SECRET_KEY = import.meta.env.VITE_SECRET_KEY;
+      if (!SECRET_KEY) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const encrypted = params.get("data");
+
+      let payload = null;
+
+      if (encrypted) {
+        try {
+          const bytes = CryptoJS.AES.decrypt(encrypted);
+          const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+          payload = JSON.parse(decrypted);
+        } catch (err) {
+          console.error("Invalid encrypted payload");
+          return toast({
+            variant: "destructive",
+            title: "Encryption failed",
+            description: "Please return to your app",
+          });
+        }
+      }
+
+      if (!payload) {
+        return toast({
+          variant: "destructive",
+          title: "Encryption failed",
+          description: "Please return to your app",
+        });
+      }
+
+      const { amount, currency, webhook, metadata } = payload;
 
       if (!amount || !currency || !webhook) return;
 
       setInitLoading(true);
 
-      // const data: ITx = {
-      //   amount,
-      //   currency,
-      //   webhookUrl: webhook,
-      //   from: "",
-      //   to: "",
-      //   status: "pending",
-      //   txHash: "",
-      // };
+      const data: ITx = {
+        amount,
+        currency,
+        webhookUrl: webhook,
+        from: "",
+        to: "",
+        status: "pending",
+        txHash: "",
+        metadata: JSON.parse(metadata),
+      };
 
-      // const res = await TxAPI.create(data);
+      // const txRes = await TxAPI.create(data);
 
-      // if (!res.ok) {
+      // if (!txRes.ok) {
       //   toast({ variant: "destructive", title: "Failed to initialize" });
       //   setInitLoading(false);
       //   return;
       // }
 
-      // const newTx = res.data;
+      // const newTx = txRes.data;
       // setTx(newTx);
 
-      const res = await AddressAPI.getAll();
-      if (res.data) setDepositAddresses(res.data);
+      const addressRes = await AddressAPI.getAll();
+      if (addressRes.data) setDepositAddresses(addressRes.data);
       setAmount(amount);
       setSelectedToken(currency.toLowerCase());
       setInitLoading(false);
@@ -109,7 +135,7 @@ const Index = () => {
   }, [tx]);
 
   const handlePay = async () => {
-    if (!tx._id) return;
+    if (!tx?._id) return;
     if (amount === "" || Number(amount) <= 0)
       return toast({ variant: "destructive", title: "Amount is incorrect" });
 
