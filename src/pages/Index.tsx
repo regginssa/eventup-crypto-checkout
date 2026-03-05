@@ -22,6 +22,7 @@ import { useEther } from "@/hooks/use-ether";
 import { mainnet, solana } from "@reown/appkit/networks";
 import { useSolana } from "@/hooks/use-solana";
 import { AddressAPI } from "@/api/address.api";
+import { Web3API } from "@/api/web3.api";
 
 // Demo wallet addresses per token
 const demoAddresses: Record<string, string> = {
@@ -99,7 +100,16 @@ const Index = () => {
     init();
   }, []);
 
+  useEffect(() => {
+    if (!tx) return;
+    const { amount, currency, status } = tx;
+    setAmount(amount);
+    setSelectedToken(currency.toLowerCase());
+    setTxStatus(status);
+  }, [tx]);
+
   const handlePay = async () => {
+    if (!tx._id) return;
     if (amount === "" || Number(amount) <= 0)
       return toast({ variant: "destructive", title: "Amount is incorrect" });
 
@@ -113,19 +123,28 @@ const Index = () => {
     setTxStatus("confirming");
     const isEth = selectedToken.includes("eth");
 
-    let tx = null;
+    let txHash = null;
 
     if (isEth) {
-      tx = await payEth(selectedToken as any, amount, depositAddresses.eth);
+      txHash = await payEth(selectedToken as any, amount, depositAddresses.eth);
     } else {
-      tx = await paySol(selectedToken as any, amount, depositAddresses.sol);
+      txHash = await paySol(selectedToken as any, amount, depositAddresses.sol);
     }
 
-    if (!tx) {
+    if (!txHash) {
       setTxStatus("idle");
-    } else {
-      setTxStatus("confirmed");
     }
+
+    const res = await Web3API.verify({ txHash, txId: tx._id });
+
+    if (!res.ok || !res.data) {
+      toast({
+        variant: "destructive",
+        title: res.message || "Payment confirmation failed",
+      });
+    }
+
+    setTx(res.data);
   };
 
   const token = tokens.find((t) => t.id === selectedToken);
