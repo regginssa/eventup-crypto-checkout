@@ -40,7 +40,13 @@ const TransactionStatus = ({
   status,
   errorMessage,
 }: TransactionStatusProps) => {
-  if (status === "idle") return null;
+  if (
+    status === "idle" ||
+    status === "pending" ||
+    status === "detected" ||
+    status === "expired"
+  )
+    return null;
 
   const config = statusConfig[status];
 
