@@ -66,16 +66,9 @@ const Index = () => {
       let payload = null;
 
       if (encrypted) {
-        try {
-          const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
-          const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-
-          payload = JSON.parse(decrypted);
-
-          console.log("Decrypted payload:", payload);
-        } catch (err) {
-          console.error("Invalid encrypted payload", err);
-        }
+        const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        payload = JSON.parse(decrypted);
       }
 
       if (!payload) return;
@@ -94,20 +87,22 @@ const Index = () => {
         to: "",
         status: "pending",
         txHash: "",
-        metadata: JSON.parse(metadata),
+        metadata: metadata || {},
         redirectUrl: redirect,
       };
 
-      // const txRes = await TxAPI.create(data);
+      const txRes = await TxAPI.create(data);
 
-      // if (!txRes.ok) {
-      //   toast({ variant: "destructive", title: "Failed to initialize" });
-      //   setInitLoading(false);
-      //   return;
-      // }
+      console.log("TxAPI.create response:", txRes);
 
-      // const newTx = txRes.data;
-      // setTx(newTx);
+      if (!txRes.ok) {
+        toast({ variant: "destructive", title: "Failed to initialize" });
+        setInitLoading(false);
+        return;
+      }
+
+      const newTx = txRes.data;
+      setTx(newTx);
 
       const addressRes = await AddressAPI.getAll();
       if (addressRes.data) setDepositAddresses(addressRes.data);
