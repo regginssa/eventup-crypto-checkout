@@ -67,18 +67,18 @@ const Index = () => {
 
       if (encrypted) {
         try {
-          const bytes = CryptoJS.AES.decrypt(encrypted);
+          const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
           const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
           payload = JSON.parse(decrypted);
+
+          console.log("Decrypted payload:", payload);
         } catch (err) {
-          console.error("Invalid encrypted payload");
-          return;
+          console.error("Invalid encrypted payload", err);
         }
       }
 
-      if (!payload) {
-        return;
-      }
+      if (!payload) return;
 
       const { amount, currency, webhook, metadata, redirect } = payload;
 
