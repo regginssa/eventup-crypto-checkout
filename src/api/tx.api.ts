@@ -6,6 +6,12 @@ const BASE_API_ENDPOINT = "/tx";
 export const TxAPI = {
   getOne: (id: string) => api<ITx>(`${BASE_API_ENDPOINT}/${id}`),
 
+  search: (data: ITx) =>
+    api<ITx>(`${BASE_API_ENDPOINT}/search`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   create: (data: any) =>
     api<ITx>(BASE_API_ENDPOINT, {
       method: "POST",

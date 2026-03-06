@@ -91,9 +91,24 @@ const Index = () => {
         redirectUrl: redirect,
       };
 
-      const txRes = await TxAPI.create(data);
+      const txSearchRes = await TxAPI.search(data);
 
-      console.log("TxAPI.create response:", txRes);
+      if (txSearchRes.ok) {
+        setTx(txSearchRes.data);
+        setInitLoading(false);
+        return;
+      } else {
+        if (txSearchRes.message.includes("confirmed")) {
+          setTxStatus("confirmed");
+          setInitLoading(false);
+          toast({
+            title: "Transaction already confirmed",
+          });
+          return;
+        }
+      }
+
+      const txRes = await TxAPI.create(data);
 
       if (!txRes.ok) {
         toast({ variant: "destructive", title: "Failed to initialize" });
@@ -106,8 +121,6 @@ const Index = () => {
 
       const addressRes = await AddressAPI.getAll();
       if (addressRes.data) setDepositAddresses(addressRes.data);
-      setAmount(amount);
-      setSelectedToken(currency.toLowerCase());
       setInitLoading(false);
     }
 
